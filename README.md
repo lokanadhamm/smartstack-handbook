@@ -64,6 +64,7 @@ TODO
 - With Serf
 - With ZooKeeper
 - Your first own service
+- DRY (Don't Repeat Yourself): generate a config file that connects to the right port
 
 Cookbooks - some real life typical setups
 -----------------------------------------
@@ -80,11 +81,12 @@ TODO
 - Web load balancer - with sticky sessions
 - Web load balancer - with SSL and sticky sessions
 - ElasticSearch
-- Memcached
+- Without HAProxy: memcached and circular hashing
+- Configure your service: generate the file in Chef
 
 BONUS! Going a bit further with Serf/Chef
 - Munin setup
-- ElasticSearch cluster
+- ElasticSearch cluster: don't reconfigure right away if it's down
 - Firewall
 
 
