@@ -1,10 +1,21 @@
 The Smartstack Handbook
 =======================
 
+This work is licenced under Creative Commons 4.0 Attribution Licence
+and Apache 2.0 for the software parts.
+
+Copyright 2014 Patrick Viet
+
+Please read the [LICENCE](https://github.com/patrickviet/smartstack-handbook/blob/master/LICENCE) file first.
+
+- [LICENCE_DOCS.txt](https://github.com/patrickviet/smartstack-handbook/blob/master/LICENCE_DOCS.txt) for the text
+- [LICENCE_SOFTWARE.txt](https://github.com/patrickviet/smartstack-handbook/blob/master/LICENCE_SOFTWARE.txt) for the code
+
 What's in here
 --------------
 
 This will explain:
+
 - How to test Smartstack with Vagrant (on a local virtual machine)
 - How to setup Smarstack with a lot of real life - sometimes complex - examples
 - Smarstack day to day operations, in a real life production environment
@@ -19,6 +30,7 @@ Smartstack requirements
 Smartstack is a combination of a few very common tools, with two daemons to control them (Nerve, Synapse)
 
 The full stack uses:
+
 - A registration service: [Serf](http://www.serfdom.io/) or [ZooKeeper](http://zookeeper.apache.org/)
 - Willy Tarreau's [HAProxy](http://haproxy.1wt.eu)
 - Ruby 1.9.3, for the Smartstack daemons, that run with Ruby 1.9.3 - or JRuby
@@ -33,6 +45,7 @@ Architecture
 ------------
 
 TODO
+
 - Nerve architecture details
 - Synapse architecture details
 - Synapse plugins (DNS etc)
@@ -46,6 +59,7 @@ Installation
 ------------
 
 TODO
+
 - Vagrant test environment
 - With Serf
 - With ZooKeeper
@@ -55,6 +69,7 @@ Cookbooks - some real life typical setups
 -----------------------------------------
 
 TODO
+
 - SQL Master
 - SQL Slave - simple
 - SQL Slave - advanced, with a replication monitor daemon
@@ -77,6 +92,7 @@ Operations
 ----------
 
 TODO
+
 - Put a server in temporary maintenance
 - Put a server in long term maintenance
 - Take a server out of maintenance
