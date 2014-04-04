@@ -82,7 +82,81 @@ TODO
 - Web load balancer - with SSL and sticky sessions
 - ElasticSearch
 - Without HAProxy: memcached and circular hashing
-- Configure your service: generate the file in Chef
+
+### Configure your service: generate the file in Chef
+
+#### Abstract
+
+_DRY_ = that means Don't Repeat Yourself.
+
+You have already reserved a port for a name in ```cookbooks/smartstack/attributes/ports.rb```.
+You don't want to be hardcoding it anywhere else!
+
+Provided you include the smartstack cookbook as a dependency in your cookbook meatadata, it is accessible via ```node.smartstack.service_ports['yourservicename']```
+
+Most services can read a configuration file to know where to connect. You want to generate the configuration file with Chef, and trigger a restart.
+
+#### Real life example : a daemon called _pusher_ accesses Rabbitmq
+
+Original cookbook: direct access
+
+```ruby
+#cookbooks/pusher/attributes/default.rb
+node.pusher.conf.rmq_host = 'myrabbitserver'
+node.pusher.conf.rmq_host = 5672
+[...]
+```
+
+```ruby
+#cookbooks/pusher/recipes/default.rb
+[... stuff that installs pusher ...]
+
+service 'pusher' do
+  supports :reload => true
+end
+
+template '/opt/pusher/etc/pusher.conf' do
+  user 'pusher'
+  group 'pusher'
+  mode '0600'
+  notifies :reload, 'service[pusher]'
+end
+```
+
+```ruby
+#cookbooks/pusher/templates/default/pusher.conf.erb
+[...]
+<% node.pusher.conf.each do |k,v| %>
+<%= "#{k} = #{v}" %>
+<% end %>
+[...]
+```
+
+```ruby
+#cookbooks/smartstack/attributes/ports.rb
+default.smartstack.ports = {
+[...]
+  4201 => 'someservice',
+  4202 => 'rabbitmq',
+  4203 => 'somethingelse',
+[...]
+}
+```
+
+Changes to the cookbook
+```ruby
+#cookbooks/pusher/metadata.rb
+depends 'smartstack' # this imports the smartstack attributes
+```
+
+```ruby
+#cookbooks/pusher/attribues/default.rb
+node.pusher.conf.rmq_host = '127.0.0.1' # you can also put any name that points to localhost
+node.pusher.conf.rmq_host = node.smartstack.service_ports['rabbitmq']
+```
+
+And... That's it. Run chef, it will trigger the reload, and _pusher_ will be using smartstack with that little change.
+
 
 BONUS! Going a bit further with Serf/Chef
 - Munin setup
