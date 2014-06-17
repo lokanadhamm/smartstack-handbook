@@ -33,21 +33,71 @@ The full stack uses:
 
 - A registration service: [Serf](http://www.serfdom.io/) or [ZooKeeper](http://zookeeper.apache.org/)
 - Willy Tarreau's [HAProxy](http://haproxy.1wt.eu)
-- Ruby 1.9.3, for the Smartstack daemons, that run with Ruby 1.9.3 - or JRuby
+- Ruby 1.9.3, for the Smartstack daemons, that can run with Ruby 1.9.3 - or the 1.9 compatible JRuby
 - A UNIX-like operating system supported by HAProxy: Linux, Solaris, FreeBSD, OpenBSD
 - Chef for configuration - not mandatory but very very very recommended. Chef-solo, without a central server, is sufficient.
 
-The most common choice is Linux Ubuntu 12.04 LTS
+The most common OS choice is Linux Ubuntu 12.04 LTS
 
 But with a little adaptation of the Chef cookbooks (software package names mostly), you'll also be totally fine on RedHat, FreeBSD, etc, it's not like installing Ruby 1.9.3 and HAProxy is rocket science.
 
 Architecture
 ------------
 
-TODO
+### Base architecture
+TODO: add pretty drawing
 
-- Nerve architecture details
-- Synapse architecture details
+To better understand Smartstack, I'll describe a before/after. In this example I'll take a Java app that consumes ElasticSearch.
+
+Before:
+- User connects to Java app
+- Java app does some processing. It's a search. It needs to query ElasticSearch
+- Java app connects directly to the ElasticSearch server, via an IP address known via a DNS or Hosts entry
+- ElasticSearch processes the request, and we go all back up the stack
+
+The problem here is that if the IP address of the hosts file change, we need to restart the Java app, and while Java is very fast to run, it's not exactly fast to startup.
+
+Sometimes, we will use a load balancer between the app and the backend. That's nice but means dedicated hardware, more management, more risks of failutre, (or in the case of am Amazon architecture, ELB crashes at the same time as EBS - not cool! - not to mention the extra costs, latency, etc)
+
+After
+- User connects to Java app
+- Java app must connect to ElasticSearch
+- __Java app connects to a localhost:someport HAProxy software!__ - which is dynamically configured by smartstack
+- HAProxy connects to ElasticSearch
+- Request goes back up the stack
+
+Result
+- HAProxy is very fast so no visible latency or performance loss is introduced
+- Any reconfiguration is transparent for the app
+- The app doesn't need to know about this discovery system: just connect to some local port as if it was the final service
+- No extra hardware
+
+Here are the elements of Smartstack:
+- Nerve probes for services, and announces them to some registry (ZooKeeper or Serf)
+- Synapse queries the registry to generate a HAProxy configuration
+- HAProxy runs, on each node, making locally accessible some remote services
+- ZooKeeper or Serf runs as a registry
+
+### Nerve architecture details
+
+TODO: add pretty drawing
+
+Nerve is the daemon that watches the service and announces it (or stops announcing it) to the registry. It must run on the nodes that run a service that others nodes will want to consume. It's written in Ruby. The default installation, with Chef, puts it in /opt/smartstack/src, with its configuration in /opt/smartstack/config.json.
+
+It's basically a loop that runs the watchers you configure. If the watchers (ie. a TCP probe to localhost, or an HTTP probe, etc) return OK, then it will in turn register that this service is OK for the node it's running on. With ZooKeeper, it's a persistent TCP connection to one of the machines of the ZooKeeper cluster, with Serf it's a tag set in the file /etc/serf/zzz_nerve_nameofservice_80.json.
+
+And... That's all there is to it.
+
+### Synapse architecture details
+
+Synapse is Nerve's brother, it queries the registry (or other sources!) to know the state of a service and configure its local HAProxy accordingly. You must, for each service, specify:
+- How it discovers the service (ZooKeeper, Serf, DNS, etc)
+- The HAProxy configuration variables it will take from this service (see examples)
+- Various timing/timeout variables
+
+Just like Nerve, it's a loop, that runs through the _service_watchers_, and if something changes, will reconfigure the HAProxy. It has a few nice transparent features, such as, if a service comes up/down it will not restart HAProxy but send via UNIX socket an activate/deactivate command.
+
+TODO
 - Synapse plugins (DNS etc)
 - The Serf port/plugin
 - Operations with ZooKeeper
