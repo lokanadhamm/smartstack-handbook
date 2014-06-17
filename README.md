@@ -82,7 +82,58 @@ TODO
 - Web load balancer - with SSL and sticky sessions
 - ElasticSearch
 - Without HAProxy: memcached and circular hashing
-- Configure your service: generate the file in Chef
+
+### Configure your service: generate the file in Chef
+
+#### Abstract
+
+_DRY_ = that means Don't Repeat Yourself.
+
+You have already reserved a port for a name in ```cookbooks/smartstack/attributes/ports.rb```.
+You don't want to be hardcoding it anywhere else!
+
+Provided you include the smartstack cookbook as a dependency in your cookbook meatadata, it is accessible via ```node.smartstack.service_ports['yourservicename']```
+
+Most services can read a configuration file to know where to connect. You want to generate the configuration file with Chef, and trigger a restart.
+
+#### Real life example : a daemon called _pusher_ accesses Rabbitmq
+
+Original cookbook: direct access
+
+```ruby
+#cookbooks/pusher/attributes/default.rb
+node.pusher.rmq_host = 'myrabbitserver'
+node.pusher.rmq_host = 5672
+...
+```
+
+cookbooks/pusher/recipes/default.rb
+```ruby
+[... stuff that installs pusher ...]
+
+service 'pusher' do
+  supports :reload => true
+end
+
+template '/opt/pusher/etc/pusher.conf' do
+  user 'pusher'
+  group 'pusher'
+  mode '0600'
+  notifies :reload, 'service[pusher]'
+end
+
+```
+
+cookbooks/pusher/
+
+
+
+I had this service that accessed RabbitMQ, let's call it _pusher_.
+
+It is accessible via the 
+
+The general pattern is:
+- Configure your service in Chef, reserving a port
 
 BONUS! Going a bit further with Serf/Chef
 - Munin setup
