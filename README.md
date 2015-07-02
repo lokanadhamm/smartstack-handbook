@@ -119,6 +119,75 @@ TODO
 Cookbooks - some real life typical setups
 -----------------------------------------
 
+### Server weight
+
+It works only with Serf.
+How to make it work
+
+1/ put the option add_server_weight to the synapse / haproxy section of a service.
+
+Example.
+
+```ruby
+  'gyg_https' => {
+    'nerve' => {
+      'port' => 443,
+      'reporter_type' => 'serf',
+      'check_interval' => 2,
+      'checks' => [
+        {'type' => 'tcp', 'timeout' => 10, 'rise' => 2, 'fall' => 2},
+      ],
+    },
+    'synapse' => {
+      'discovery' => { 'method' => 'serf' },
+      'haproxy' => {
+        'server_options' => 'cookie {md5cookie} check inter 30s downinter 5s fastinter 2s rise 3 fall 2 ssl check-ssl',
+        'add_server_weight' => true,
+        'listen' => [
+          'mode http',
+          'option dontlog-normal',
+          'option httpchk GET /ping.php',
+          'maxconn 4000',
+          'fullconn 1500',
+          'cookie STICKY insert indirect',
+          'timeout client 1h'
+        ],
+      },
+    },
+  },
+```
+
+Once you do that, each server will be added a default weight of 50
+
+/etc/haproxy/haproxy.cfg
+server <name1> <ip1> <params> weight 50
+server <name2> <ip2> <params> weight 50
+
+Just check cat /etc/haproxy/haproxy.cfg to be sure it worked once you activate the option.
+
+2/ to a server to which you want to add a different weight, just set the smart:serverweight tag in serf.
+howto:
+
+in /etc/serf/
+add a file, weight.json for example, that contains
+```json
+{
+  "tags":{
+    "smart:serverweight":"49"
+  }
+}
+```
+
+Run ```killall -HUP serf```
+
+Check it's ok via serf info
+
+You might have to restart haproxy manually on the consumers as it doesn't trigger a restart automatically on just a weight change.
+(FIXME?) - ```service haproxy reload```.
+
+You can see the resulting new haproxy.cfg with the different weight.
+
+
 TODO
 
 - SQL Master
