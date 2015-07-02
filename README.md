@@ -187,10 +187,44 @@ You might have to restart haproxy manually on the consumers as it doesn't trigge
 
 You can see the resulting new haproxy.cfg with the different weight.
 
+### SQL Master
+
+Here is an example service definition.
+
+```ruby
+  'sqlmaster' => {
+    'synapse' => {
+      'discovery' => {
+        'method' => 'dns',
+        'check_interval' => 5.0,
+        'servers' => [
+          {'name'=>'sqlmaster','host'=>'database1.domain.com','port'=>3306},
+        ],
+      },
+      'haproxy' => {
+        'server_options' => 'check inter 30s downinter 2s fastinter 2s rise 3 fall 2',
+        'listen' => [
+          'mode tcp',
+          'timeout  connect 10s',
+          'timeout  client  1h',
+          'timeout  server  1h',
+        ],
+      },
+    },
+  },
+```
+
+In this case, you can change your master in two main ways.
+
+- Via DNS (that also works for Amazon RDS - it does it on its own)
+- Change the name it points to!
+
+For GYG, the second choice is the right one. From db1 at the ```host``` parameter, put db2, and converge chef everywhere.
+It's must faster than any kind of DNS but still uses a symbolic name.
+
 
 TODO
 
-- SQL Master
 - SQL Slave - simple
 - SQL Slave - advanced, with a replication monitor daemon
 - Amazon RDS
