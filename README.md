@@ -223,10 +223,55 @@ For GYG, the second choice is the right one. From db1 at the ```host``` paramete
 It's must faster than any kind of DNS but still uses a symbolic name.
 
 
+### SQL Slave - advanced, with a replication monitor daemon
+
+This is a pretty cool setup.
+
+This is for Debian or Ubuntu.
+
+Howto
+
+Chef config:
+
+- Add file to cookbooks/templates/default/[sv-mysql-check_slave-run.erb](https://github.com/getyourguide/smartstack-handbook/blob/master/examples/sv-mysql_check_slave-run.erb)
+- Include RUNIT cookbook: Here it is on github [link to runit cookbook](https://github.com/hw-cookbooks/runit) in metadata and run
+- Add a ```include_recipe 'runit'``` and ```runit_service 'mysql_slave_check'``` directives
+
+This means that if you check http://ip-of-server:3307/health you get 200 or 404 depending on how late the slave is.
+
+So I can therefore make this Smartstack configuration:
+
+```ruby
+  'sqlslave' => {
+    'synapse' => {
+      'discovery' => { 'method' => 'serf' },
+      'haproxy' => {
+        'server_options' => 'check inter 10s fastinter 5s downinter 8s rise 3 fall 2',
+        'listen' => [
+          'mode tcp',
+          'timeout  connect 10s',
+          'timeout  client  1h',
+          'timeout  server  1h',
+        ],
+      },
+    },
+    'nerve' => {
+      'port' => 3306,
+      'check_interval' => 3,
+      'reporter_type' => 'serf',
+      'checks' => [
+        { 'type' => 'http', 'port' => 3307, 'uri' => '/health', 'timeout' => 5, 'rise' => 2, 'fall' => 2 },
+      ],
+    },
+  },
+```
+
+Notice that nerve check on port 3307 in http, but actually announces port 3306 as the service and synapse is set to TCP.
+
+
 TODO
 
 - SQL Slave - simple
-- SQL Slave - advanced, with a replication monitor daemon
 - Amazon RDS
 - RabbitMQ (unique server)
 - RabbitMQ (multiple servers, no cluster)
