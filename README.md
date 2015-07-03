@@ -219,7 +219,7 @@ In this case, you can change your master in two main ways.
 - Via DNS (that also works for Amazon RDS - it does it on its own)
 - Change the name it points to!
 
-For GYG, the second choice is the right one. From db1 at the ```host``` parameter, put db2, and converge chef everywhere.
+For GYG, we change the name it points to. From db1 at the ```host``` parameter, put db2, and converge chef everywhere.
 It's must faster than any kind of DNS but still uses a symbolic name.
 
 
